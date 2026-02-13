@@ -1,0 +1,152 @@
+# Equivalent OTTL configuration for genainormalizer
+# This achieves the same result as genainormalizer with all profiles enabled.
+# Each mapping requires 2 statements (set + delete_key) with a where clause.
+# Value mappings (openinference.span.kind, traceloop.span.kind, llm.request.type)
+# require additional replace_pattern or conditional statements.
+
+processors:
+  transform:
+    trace_statements:
+      - context: span
+        statements:
+          # --- OpenInference profile (16 mappings = 32 statements) ---
+
+          # Token usage
+          - set(attributes["gen_ai.usage.input_tokens"], attributes["llm.token_count.prompt"]) where attributes["llm.token_count.prompt"] != nil
+          - delete_key(attributes, "llm.token_count.prompt") where attributes["llm.token_count.prompt"] != nil
+          - set(attributes["gen_ai.usage.output_tokens"], attributes["llm.token_count.completion"]) where attributes["llm.token_count.completion"] != nil
+          - delete_key(attributes, "llm.token_count.completion") where attributes["llm.token_count.completion"] != nil
+
+          # Model & provider
+          - set(attributes["gen_ai.request.model"], attributes["llm.model_name"]) where attributes["llm.model_name"] != nil
+          - delete_key(attributes, "llm.model_name") where attributes["llm.model_name"] != nil
+          - set(attributes["gen_ai.provider.name"], attributes["llm.provider"]) where attributes["llm.provider"] != nil
+          - delete_key(attributes, "llm.provider") where attributes["llm.provider"] != nil
+          - set(attributes["gen_ai.system"], attributes["llm.system"]) where attributes["llm.system"] != nil
+          - delete_key(attributes, "llm.system") where attributes["llm.system"] != nil
+
+          # Input/output content
+          - set(attributes["gen_ai.input.messages"], attributes["llm.input_messages"]) where attributes["llm.input_messages"] != nil
+          - delete_key(attributes, "llm.input_messages") where attributes["llm.input_messages"] != nil
+          - set(attributes["gen_ai.output.messages"], attributes["llm.output_messages"]) where attributes["llm.output_messages"] != nil
+          - delete_key(attributes, "llm.output_messages") where attributes["llm.output_messages"] != nil
+
+          # Embeddings
+          - set(attributes["gen_ai.request.model"], attributes["embedding.model_name"]) where attributes["embedding.model_name"] != nil
+          - delete_key(attributes, "embedding.model_name") where attributes["embedding.model_name"] != nil
+
+          # Tool
+          - set(attributes["gen_ai.tool.name"], attributes["tool.name"]) where attributes["tool.name"] != nil
+          - delete_key(attributes, "tool.name") where attributes["tool.name"] != nil
+          - set(attributes["gen_ai.tool.description"], attributes["tool.description"]) where attributes["tool.description"] != nil
+          - delete_key(attributes, "tool.description") where attributes["tool.description"] != nil
+          - set(attributes["gen_ai.tool.call.arguments"], attributes["tool_call.function.arguments"]) where attributes["tool_call.function.arguments"] != nil
+          - delete_key(attributes, "tool_call.function.arguments") where attributes["tool_call.function.arguments"] != nil
+          - set(attributes["gen_ai.tool.call.id"], attributes["tool_call.id"]) where attributes["tool_call.id"] != nil
+          - delete_key(attributes, "tool_call.id") where attributes["tool_call.id"] != nil
+
+          # Reranker
+          - set(attributes["gen_ai.request.model"], attributes["reranker.model_name"]) where attributes["reranker.model_name"] != nil
+          - delete_key(attributes, "reranker.model_name") where attributes["reranker.model_name"] != nil
+
+          # Agent & session
+          - set(attributes["gen_ai.agent.name"], attributes["agent.name"]) where attributes["agent.name"] != nil
+          - delete_key(attributes, "agent.name") where attributes["agent.name"] != nil
+          - set(attributes["gen_ai.conversation.id"], attributes["session.id"]) where attributes["session.id"] != nil
+          - delete_key(attributes, "session.id") where attributes["session.id"] != nil
+
+          # Span kind → operation name (VALUE MAPPING - requires 10 conditional statements per source key)
+          # openinference.span.kind
+          - set(attributes["gen_ai.operation.name"], "chat") where attributes["openinference.span.kind"] == "LLM"
+          - set(attributes["gen_ai.operation.name"], "embeddings") where attributes["openinference.span.kind"] == "EMBEDDING"
+          - set(attributes["gen_ai.operation.name"], "invoke_agent") where attributes["openinference.span.kind"] == "CHAIN"
+          - set(attributes["gen_ai.operation.name"], "retrieval") where attributes["openinference.span.kind"] == "RETRIEVER"
+          - set(attributes["gen_ai.operation.name"], "retrieval") where attributes["openinference.span.kind"] == "RERANKER"
+          - set(attributes["gen_ai.operation.name"], "execute_tool") where attributes["openinference.span.kind"] == "TOOL"
+          - set(attributes["gen_ai.operation.name"], "invoke_agent") where attributes["openinference.span.kind"] == "AGENT"
+          - set(attributes["gen_ai.operation.name"], "guardrail") where attributes["openinference.span.kind"] == "GUARDRAIL"
+          - set(attributes["gen_ai.operation.name"], "evaluate") where attributes["openinference.span.kind"] == "EVALUATOR"
+          - set(attributes["gen_ai.operation.name"], "text_completion") where attributes["openinference.span.kind"] == "PROMPT"
+          - delete_key(attributes, "openinference.span.kind") where attributes["openinference.span.kind"] != nil
+
+          # --- OpenLLMetry profile (21 mappings = 42 statements + value mappings) ---
+
+          # Token usage
+          - set(attributes["gen_ai.usage.input_tokens"], attributes["llm.usage.prompt_tokens"]) where attributes["llm.usage.prompt_tokens"] != nil
+          - delete_key(attributes, "llm.usage.prompt_tokens") where attributes["llm.usage.prompt_tokens"] != nil
+          - set(attributes["gen_ai.usage.output_tokens"], attributes["llm.usage.completion_tokens"]) where attributes["llm.usage.completion_tokens"] != nil
+          - delete_key(attributes, "llm.usage.completion_tokens") where attributes["llm.usage.completion_tokens"] != nil
+
+          # Model & provider
+          - set(attributes["gen_ai.request.model"], attributes["llm.request.model"]) where attributes["llm.request.model"] != nil
+          - delete_key(attributes, "llm.request.model") where attributes["llm.request.model"] != nil
+          - set(attributes["gen_ai.response.model"], attributes["llm.response.model"]) where attributes["llm.response.model"] != nil
+          - delete_key(attributes, "llm.response.model") where attributes["llm.response.model"] != nil
+          # llm.system already handled above
+
+          # Request params
+          - set(attributes["gen_ai.request.max_tokens"], attributes["llm.request.max_tokens"]) where attributes["llm.request.max_tokens"] != nil
+          - delete_key(attributes, "llm.request.max_tokens") where attributes["llm.request.max_tokens"] != nil
+          - set(attributes["gen_ai.request.temperature"], attributes["llm.request.temperature"]) where attributes["llm.request.temperature"] != nil
+          - delete_key(attributes, "llm.request.temperature") where attributes["llm.request.temperature"] != nil
+          - set(attributes["gen_ai.request.top_p"], attributes["llm.request.top_p"]) where attributes["llm.request.top_p"] != nil
+          - delete_key(attributes, "llm.request.top_p") where attributes["llm.request.top_p"] != nil
+          - set(attributes["gen_ai.request.top_k"], attributes["llm.top_k"]) where attributes["llm.top_k"] != nil
+          - delete_key(attributes, "llm.top_k") where attributes["llm.top_k"] != nil
+          - set(attributes["gen_ai.request.frequency_penalty"], attributes["llm.frequency_penalty"]) where attributes["llm.frequency_penalty"] != nil
+          - delete_key(attributes, "llm.frequency_penalty") where attributes["llm.frequency_penalty"] != nil
+          - set(attributes["gen_ai.request.presence_penalty"], attributes["llm.presence_penalty"]) where attributes["llm.presence_penalty"] != nil
+          - delete_key(attributes, "llm.presence_penalty") where attributes["llm.presence_penalty"] != nil
+          - set(attributes["gen_ai.request.stop_sequences"], attributes["llm.chat.stop_sequences"]) where attributes["llm.chat.stop_sequences"] != nil
+          - delete_key(attributes, "llm.chat.stop_sequences") where attributes["llm.chat.stop_sequences"] != nil
+          - set(attributes["gen_ai.tool.definitions"], attributes["llm.request.functions"]) where attributes["llm.request.functions"] != nil
+          - delete_key(attributes, "llm.request.functions") where attributes["llm.request.functions"] != nil
+
+          # Response
+          - set(attributes["gen_ai.response.finish_reasons"], attributes["llm.response.finish_reason"]) where attributes["llm.response.finish_reason"] != nil
+          - delete_key(attributes, "llm.response.finish_reason") where attributes["llm.response.finish_reason"] != nil
+          - set(attributes["gen_ai.response.finish_reasons"], attributes["llm.response.stop_reason"]) where attributes["llm.response.stop_reason"] != nil
+          - delete_key(attributes, "llm.response.stop_reason") where attributes["llm.response.stop_reason"] != nil
+
+          # llm.request.type → gen_ai.operation.name (value mapping)
+          - set(attributes["gen_ai.operation.name"], "text_completion") where attributes["llm.request.type"] == "completion"
+          - set(attributes["gen_ai.operation.name"], "chat") where attributes["llm.request.type"] == "chat"
+          - set(attributes["gen_ai.operation.name"], "retrieval") where attributes["llm.request.type"] == "rerank"
+          - set(attributes["gen_ai.operation.name"], "embeddings") where attributes["llm.request.type"] == "embedding"
+          - delete_key(attributes, "llm.request.type") where attributes["llm.request.type"] != nil
+
+          # traceloop.span.kind → gen_ai.operation.name (value mapping)
+          - set(attributes["gen_ai.operation.name"], "invoke_agent") where attributes["traceloop.span.kind"] == "workflow"
+          - set(attributes["gen_ai.operation.name"], "invoke_agent") where attributes["traceloop.span.kind"] == "task"
+          - set(attributes["gen_ai.operation.name"], "invoke_agent") where attributes["traceloop.span.kind"] == "agent"
+          - set(attributes["gen_ai.operation.name"], "execute_tool") where attributes["traceloop.span.kind"] == "tool"
+          - delete_key(attributes, "traceloop.span.kind") where attributes["traceloop.span.kind"] != nil
+
+          # Traceloop entity
+          - set(attributes["gen_ai.agent.name"], attributes["traceloop.entity.name"]) where attributes["traceloop.entity.name"] != nil
+          - delete_key(attributes, "traceloop.entity.name") where attributes["traceloop.entity.name"] != nil
+          - set(attributes["gen_ai.input.messages"], attributes["traceloop.entity.input"]) where attributes["traceloop.entity.input"] != nil
+          - delete_key(attributes, "traceloop.entity.input") where attributes["traceloop.entity.input"] != nil
+          - set(attributes["gen_ai.output.messages"], attributes["traceloop.entity.output"]) where attributes["traceloop.entity.output"] != nil
+          - delete_key(attributes, "traceloop.entity.output") where attributes["traceloop.entity.output"] != nil
+          - set(attributes["gen_ai.conversation.id"], attributes["traceloop.association.properties"]) where attributes["traceloop.association.properties"] != nil
+          - delete_key(attributes, "traceloop.association.properties") where attributes["traceloop.association.properties"] != nil
+
+          # --- LangChain profile (2 mappings = 4 statements) ---
+          - set(attributes["gen_ai.conversation.id"], attributes["lc.metadata.thread_id"]) where attributes["lc.metadata.thread_id"] != nil
+          - delete_key(attributes, "lc.metadata.thread_id") where attributes["lc.metadata.thread_id"] != nil
+          - set(attributes["gen_ai.agent.name"], attributes["langgraph.node.name"]) where attributes["langgraph.node.name"] != nil
+          - delete_key(attributes, "langgraph.node.name") where attributes["langgraph.node.name"] != nil
+
+          # --- CrewAI profile (2 mappings = 4 statements) ---
+          - set(attributes["gen_ai.agent.name"], attributes["agent_role"]) where attributes["agent_role"] != nil
+          - delete_key(attributes, "agent_role") where attributes["agent_role"] != nil
+          - set(attributes["gen_ai.conversation.id"], attributes["crew_id"]) where attributes["crew_id"] != nil
+          - delete_key(attributes, "crew_id") where attributes["crew_id"] != nil
+
+          # --- PydanticAI profile (1 mapping = 2 statements) ---
+          - set(attributes["gen_ai.agent.name"], attributes["agent_name"]) where attributes["agent_name"] != nil
+          - delete_key(attributes, "agent_name") where attributes["agent_name"] != nil
+
+# Total: 109 OTTL statements
+# Every span is evaluated against ALL 109 statements sequentially.

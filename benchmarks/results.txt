@@ -1,0 +1,15 @@
+goos: darwin
+goarch: arm64
+pkg: github.com/kylehounslow/genainormalizer
+cpu: Apple M1 Pro
+BenchmarkNormalizeOpenInference-10    	  986823	      1202 ns/op	    1760 B/op	      29 allocs/op
+BenchmarkNormalizeOpenInference-10    	  907998	      1190 ns/op	    1760 B/op	      29 allocs/op
+BenchmarkNormalizeOpenInference-10    	 1000000	      1202 ns/op	    1760 B/op	      29 allocs/op
+BenchmarkNormalizeNoMatch-10          	 5587326	       216.9 ns/op	     312 B/op	       9 allocs/op
+BenchmarkNormalizeNoMatch-10          	 5599600	       228.1 ns/op	     312 B/op	       9 allocs/op
+BenchmarkNormalizeNoMatch-10          	 4952532	       251.7 ns/op	     312 B/op	       9 allocs/op
+BenchmarkNormalizeBatch100-10         	  156338	      6782 ns/op	       0 B/op	       0 allocs/op
+BenchmarkNormalizeBatch100-10         	  163768	      7743 ns/op	       0 B/op	       0 allocs/op
+BenchmarkNormalizeBatch100-10         	  184658	      6848 ns/op	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/kylehounslow/genainormalizer	12.909s
