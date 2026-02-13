@@ -1,0 +1,37 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  genainormalizer:
+    profiles:
+      - openinference
+      - openllmetry
+      - langchain
+      - crewai
+      - pydanticai
+      - strands
+    remove_originals: false
+
+exporters:
+  debug:
+    verbosity: detailed
+
+service:
+  telemetry:
+    metrics:
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: localhost
+                port: 9999
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [genainormalizer]
+      exporters: [debug]
