@@ -10,8 +10,12 @@ receivers:
 processors:
   - gomod: github.com/kylehounslow/genainormalizer v0.0.0
     path: .
+  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.145.0
+  - gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.145.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.145.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.145.0
 
 exporters:
-  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.145.0
   - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.145.0
   - gomod: go.opentelemetry.io/collector/exporter/otlphttpexporter v0.145.0
+  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.145.0

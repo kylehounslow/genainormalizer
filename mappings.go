@@ -44,12 +44,9 @@ var openInferenceMappings = []Mapping{
 	// Token usage
 	{"llm.token_count.prompt", "gen_ai.usage.input_tokens"},
 	{"llm.token_count.completion", "gen_ai.usage.output_tokens"},
-	{"llm.token_count.total", "gen_ai.usage.total_tokens"},
-	{"llm.token_count.prompt_details.cache_read", "gen_ai.usage.cache_read.input_tokens"},
-	{"llm.token_count.prompt_details.cache_write", "gen_ai.usage.cache_creation.input_tokens"},
 
 	// Model & provider
-	{"llm.model_name", "gen_ai.request.model"},          // LLM spans
+	{"llm.model_name", "gen_ai.request.model"},
 	{"llm.provider", "gen_ai.provider.name"},
 	{"llm.system", "gen_ai.system"},
 
@@ -57,11 +54,8 @@ var openInferenceMappings = []Mapping{
 	{"llm.input_messages", "gen_ai.input.messages"},
 	{"llm.output_messages", "gen_ai.output.messages"},
 
-	// Request params
-	{"llm.invocation_parameters", "gen_ai.request.parameters"},
-
 	// Embeddings
-	{"embedding.model_name", "gen_ai.request.model"},    // Embedding spans (mutually exclusive with llm.model_name)
+	{"embedding.model_name", "gen_ai.request.model"},
 
 	// Tool
 	{"tool.name", "gen_ai.tool.name"},
@@ -69,19 +63,14 @@ var openInferenceMappings = []Mapping{
 	{"tool_call.function.arguments", "gen_ai.tool.call.arguments"},
 	{"tool_call.id", "gen_ai.tool.call.id"},
 
-	// Retrieval
-	{"retrieval.documents", "gen_ai.retrieval.documents"},
-	{"reranker.model_name", "gen_ai.request.model"},     // Reranker spans (mutually exclusive with llm/embedding model)
-	{"reranker.query", "gen_ai.retrieval.query.text"},
+	// Reranker model (mutually exclusive with llm/embedding model)
+	{"reranker.model_name", "gen_ai.request.model"},
 
 	// Agent & session
 	{"agent.name", "gen_ai.agent.name"},
 	{"session.id", "gen_ai.conversation.id"},
 
 	// Span kind → operation name (value mapping handled separately)
-	// openinference.span.kind requires VALUE mapping, not just key rename.
-	// LLM→chat, EMBEDDING→embeddings, TOOL→execute_tool, AGENT→invoke_agent,
-	// CHAIN→chain, RETRIEVER→retrieve, RERANKER→rerank, GUARDRAIL→guardrail
 	{"openinference.span.kind", "gen_ai.operation.name"},
 }
 
@@ -92,9 +81,6 @@ var openLLMetryMappings = []Mapping{
 	// Token usage
 	{"llm.usage.prompt_tokens", "gen_ai.usage.input_tokens"},
 	{"llm.usage.completion_tokens", "gen_ai.usage.output_tokens"},
-	{"llm.usage.total_tokens", "gen_ai.usage.total_tokens"},
-	{"gen_ai.usage.cache_creation_input_tokens", "gen_ai.usage.cache_creation.input_tokens"},
-	{"gen_ai.usage.cache_read_input_tokens", "gen_ai.usage.cache_read.input_tokens"},
 
 	// Model & provider
 	{"llm.request.model", "gen_ai.request.model"},
@@ -130,9 +116,7 @@ var openLLMetryMappings = []Mapping{
 
 var langchainMappings = []Mapping{
 	{"lc.metadata.thread_id", "gen_ai.conversation.id"},
-	{"lc.metadata.run_id", "gen_ai.request.id"},
 	{"langgraph.node.name", "gen_ai.agent.name"},
-	{"langgraph.step", "gen_ai.agent.step"},
 }
 
 // --- CrewAI ---
@@ -140,8 +124,6 @@ var langchainMappings = []Mapping{
 var crewaiMappings = []Mapping{
 	{"crewai.agent.role", "gen_ai.agent.name"},
 	{"crewai.agent.goal", "gen_ai.agent.description"},
-	{"crewai.task.description", "gen_ai.operation.description"},
-	{"crewai.task.expected_output", "gen_ai.operation.expected_output"},
 	{"crewai.crew.id", "gen_ai.conversation.id"},
 }
 

@@ -38,7 +38,7 @@ Single-pass attribute canonicalization via configurable mapping profiles:
 | Agentic abstraction unification | `crewai.agent.role` → `gen_ai.agent.name` |
 | Metadata promotion | `lc.metadata.thread_id` → `gen_ai.conversation.id` |
 
-60 attribute mappings across 6 profiles: `openinference`, `openllmetry`, `langchain`, `crewai`, `pydanticai`, `strands`.
+47 attribute mappings across 6 profiles: `openinference`, `openllmetry`, `langchain`, `crewai`, `pydanticai`, `strands`. All targets verified against the [OTel GenAI SemConv registry](https://opentelemetry.io/docs/specs/semconv/registry/attributes/gen-ai/) (v1.39.0).
 
 ## Configuration
 
