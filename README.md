@@ -12,12 +12,11 @@ graph LR
         OI[OpenInference<br>llm.token_count.prompt<br>llm.model_name<br>openinference.span.kind]
         OL[OpenLLMetry<br>llm.usage.prompt_tokens<br>llm.request.model<br>traceloop.span.kind]
         LC[LangChain<br>lc.metadata.thread_id<br>langgraph.node.name]
-        CR[CrewAI<br>crewai.agent.role]
-        PA[PydanticAI<br>pydantic_ai.agent.name]
-        ST[Strands<br>strands.agent.name]
+        CR[CrewAI<br>agent_role<br>crew_id]
+        PA[PydanticAI<br>agent_name]
     end
 
-    OI & OL & LC & CR & PA & ST --> N[genainormalizer]
+    OI & OL & LC & CR & PA --> N[genainormalizer]
 
     subgraph After
         G[OTel GenAI SemConv<br>gen_ai.usage.input_tokens<br>gen_ai.request.model<br>gen_ai.operation.name<br>gen_ai.agent.name<br>gen_ai.conversation.id]
@@ -35,7 +34,7 @@ Single-pass attribute canonicalization via configurable mapping profiles:
 | Schema collision resolution | `llm.usage.prompt_tokens` (OpenLLMetry) → `gen_ai.usage.input_tokens` |
 | | `llm.token_count.prompt` (OpenInference) → `gen_ai.usage.input_tokens` |
 | Span kind value mapping | `openinference.span.kind: "LLM"` → `gen_ai.operation.name: "chat"` |
-| Agentic abstraction unification | `crewai.agent.role` → `gen_ai.agent.name` |
+| Agentic abstraction unification | `agent_role` (CrewAI) → `gen_ai.agent.name` |
 | Metadata promotion | `lc.metadata.thread_id` → `gen_ai.conversation.id` |
 
 42 attribute mappings across 6 profiles: `openinference`, `openllmetry`, `langchain`, `crewai`, `pydanticai`, `strands`. All targets verified against the [OTel GenAI SemConv registry](https://opentelemetry.io/docs/specs/semconv/registry/attributes/gen-ai/) (v1.39.0).
