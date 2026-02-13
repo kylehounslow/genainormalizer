@@ -39,6 +39,7 @@ AGENTS=(
   "crewai-openinference"
   "crewai-openllmetry"
   "pydanticai-openinference"
+  "anthropic-native-otel"
 )
 
 PASSED=0
