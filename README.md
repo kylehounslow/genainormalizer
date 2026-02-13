@@ -4,7 +4,7 @@ OpenTelemetry Collector processor that normalizes GenAI telemetry from [OpenInfe
 
 ## Why
 
-The official OTel GenAI instrumentation covers [7 libraries](https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation-genai). OpenInference covers 32 and OpenLLMetry covers 34 — each using incompatible attribute names for identical concepts. Without normalization, you can't build unified dashboards, compute per-agent metrics, or correlate logs across frameworks.
+The official OTel GenAI instrumentation covers [7 libraries](https://github.com/open-telemetry/opentelemetry-python-contrib/tree/93bea2dde784/instrumentation-genai). [OpenInference](https://github.com/Arize-ai/openinference/tree/main/python/instrumentation) covers 30+ and [OpenLLMetry](https://github.com/traceloop/openllmetry/tree/main/packages) covers 30+ — each using incompatible attribute names for identical concepts. Without normalization, you can't build unified dashboards, compute per-agent metrics, or correlate logs across frameworks.
 
 ```mermaid
 graph LR
