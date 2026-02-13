@@ -10,7 +10,7 @@
 # ///
 """
 Minimal CrewAI agent with OpenInference instrumentation.
-Sends traces to Data Prepper at localhost:4317.
+Sends traces to OTel Collector at localhost:4317.
 """
 import os
 os.environ["CREWAI_TRACING_ENABLED"] = "false"  # Disable CrewAI's interactive prompt
@@ -55,4 +55,4 @@ result = crew.kickoff()
 print(f"Response: {result.raw}")
 
 provider.force_flush()
-print("Trace sent to Data Prepper at localhost:4317")
+print("Trace sent to collector at localhost:4317")

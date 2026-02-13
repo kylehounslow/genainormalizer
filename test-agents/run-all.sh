@@ -38,6 +38,7 @@ AGENTS=(
   "langgraph-openllmetry"
   "crewai-openinference"
   "crewai-openllmetry"
+  "pydanticai-openinference"
 )
 
 PASSED=0

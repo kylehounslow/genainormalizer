@@ -11,7 +11,7 @@
 # ///
 """
 Minimal Strands agent with OpenLLMetry instrumentation.
-Sends traces to Data Prepper at localhost:4317.
+Sends traces to OTel Collector at localhost:4317.
 """
 
 from opentelemetry import trace
@@ -20,7 +20,7 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.sdk.resources import Resource
 
-# Configure OTLP export to Data Prepper
+# Configure OTLP export
 resource = Resource.create({"service.name": "strands-test-agent"})
 provider = TracerProvider(resource=resource)
 exporter = OTLPSpanExporter(endpoint="localhost:4317", insecure=True)
@@ -48,4 +48,4 @@ print(f"Response: {response}")
 
 # Flush traces before exit
 provider.force_flush()
-print("Trace sent to Data Prepper at localhost:4317")
+print("Trace sent to collector at localhost:4317")

@@ -11,7 +11,7 @@
 # ///
 """
 Minimal LangChain agent with OpenInference instrumentation.
-Sends traces to Data Prepper at localhost:4317.
+Sends traces to OTel Collector at localhost:4317.
 """
 
 from opentelemetry import trace
@@ -40,4 +40,4 @@ response = llm.invoke("What is 2 + 2? Reply in one word.")
 print(f"Response: {response.content}")
 
 provider.force_flush()
-print("Trace sent to Data Prepper at localhost:4317")
+print("Trace sent to collector at localhost:4317")

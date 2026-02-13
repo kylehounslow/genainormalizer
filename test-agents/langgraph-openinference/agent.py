@@ -11,7 +11,7 @@
 # ///
 """
 Minimal LangGraph agent with OpenInference instrumentation.
-Sends traces to Data Prepper at localhost:4317.
+Sends traces to OTel Collector at localhost:4317.
 """
 
 # Setup tracing FIRST before any LangChain imports
@@ -59,4 +59,4 @@ result = app.invoke({"message": "What is 2 + 2? Reply in one word."})
 print(f"Response: {result['response']}")
 
 provider.force_flush()
-print("Trace sent to Data Prepper at localhost:4317")
+print("Trace sent to collector at localhost:4317")
