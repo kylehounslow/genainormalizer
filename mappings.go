@@ -120,24 +120,28 @@ var langchainMappings = []Mapping{
 }
 
 // --- CrewAI ---
+// Source: CrewAI's built-in telemetry (crewai.telemetry)
+// Attribute keys have no "crewai." prefix in actual trace output.
 
 var crewaiMappings = []Mapping{
-	{"crewai.agent.role", "gen_ai.agent.name"},
-	{"crewai.agent.goal", "gen_ai.agent.description"},
-	{"crewai.crew.id", "gen_ai.conversation.id"},
+	{"agent_role", "gen_ai.agent.name"},
+	{"crew_id", "gen_ai.conversation.id"},
 }
 
 // --- PydanticAI ---
+// Source: PydanticAI's built-in instrumentation + OpenInference processor
+// Attribute keys have no "pydantic_ai." prefix in actual trace output.
+// Note: agent_name is also emitted by CrewAI; both map to gen_ai.agent.name.
 
 var pydanticaiMappings = []Mapping{
-	{"pydantic_ai.agent.name", "gen_ai.agent.name"},
-	{"pydantic_ai.agent.model", "gen_ai.request.model"},
+	{"agent_name", "gen_ai.agent.name"},
 }
 
 // --- Strands (AWS) ---
+// Strands emits gen_ai.* attributes natively. No framework-specific
+// attributes exist in real telemetry. This profile is intentionally
+// empty — Strands spans are normalized by the openinference/openllmetry
+// profiles (when using those instrumentors) or are already gen_ai.*
+// compliant (when using Strands' native telemetry).
 
-var strandsMappings = []Mapping{
-	{"strands.agent.name", "gen_ai.agent.name"},
-	{"strands.agent.model", "gen_ai.request.model"},
-	{"strands.tool.name", "gen_ai.tool.name"},
-}
+var strandsMappings = []Mapping{}
