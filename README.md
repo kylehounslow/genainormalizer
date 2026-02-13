@@ -4,6 +4,26 @@ OpenTelemetry Collector processor that normalizes GenAI telemetry from [OpenInfe
 
 ## Why
 
+```mermaid
+graph LR
+    subgraph Before
+        OI[OpenInference<br>llm.token_count.prompt<br>llm.model_name<br>openinference.span.kind]
+        OL[OpenLLMetry<br>llm.usage.prompt_tokens<br>llm.request.model<br>traceloop.span.kind]
+        LC[LangChain<br>lc.metadata.thread_id<br>langgraph.node.name]
+        CR[CrewAI<br>crewai.agent.role]
+        PA[PydanticAI<br>pydantic_ai.agent.name]
+        ST[Strands<br>strands.agent.name]
+    end
+
+    OI & OL & LC & CR & PA & ST --> N[genainormalizer]
+
+    subgraph After
+        G[OTel GenAI SemConv<br>gen_ai.usage.input_tokens<br>gen_ai.request.model<br>gen_ai.operation.name<br>gen_ai.agent.name<br>gen_ai.conversation.id]
+    end
+
+    N --> G
+```
+
 The official OTel GenAI instrumentation covers [7 libraries](https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation-genai). OpenInference covers 32 and OpenLLMetry covers 34 — each using incompatible attribute names for identical concepts. Without normalization, you can't build unified dashboards, compute per-agent metrics, or correlate logs across frameworks.
 
 ## What it does
