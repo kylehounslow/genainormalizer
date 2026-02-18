@@ -2,6 +2,7 @@ package genainormalizer
 
 import (
 	"context"
+	"regexp"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -13,9 +14,21 @@ import (
 const typeStr = "genainormalizer"
 
 type genaiNormalizerProcessor struct {
-	next        consumer.Traces
-	lookupTable map[string]string
-	removeOrig  bool
+	next                consumer.Traces
+	lookupTable         map[string]string
+	removeOrig          bool
+	flattenedSubkeyPats []*regexp.Regexp
+}
+
+// Patterns for flattened sub-keys that conflict with parent string values.
+// OpenInference emits both "llm.input_messages" (JSON string) and
+// "llm.input_messages.0.message.content" (flattened), which causes
+// backends like OpenSearch to reject the document due to type conflicts.
+var defaultFlattenedSubkeyPatterns = []*regexp.Regexp{
+	regexp.MustCompile(`^llm\.input_messages\.\d+`),
+	regexp.MustCompile(`^llm\.output_messages\.\d+`),
+	regexp.MustCompile(`^gen_ai\.prompt\.\d+`),
+	regexp.MustCompile(`^gen_ai\.completion\.\d+`),
 }
 
 func NewFactory() processor.Factory {
@@ -41,9 +54,10 @@ func createTracesProcessor(
 ) (processor.Traces, error) {
 	c := cfg.(*Config)
 	return &genaiNormalizerProcessor{
-		next:        next,
-		lookupTable: BuildLookupTable(c.Profiles),
-		removeOrig:  c.RemoveOriginals,
+		next:                next,
+		lookupTable:         BuildLookupTable(c.Profiles),
+		removeOrig:          c.RemoveOriginals,
+		flattenedSubkeyPats: defaultFlattenedSubkeyPatterns,
 	}, nil
 }
 
@@ -89,10 +103,29 @@ func (p *genaiNormalizerProcessor) normalizeAttributes(attrs pcommon.Map) {
 			}
 		}
 	}
+
+	// Remove flattened sub-keys that conflict with parent string values.
+	p.stripFlattenedSubkeys(attrs)
 }
 
 func (p *genaiNormalizerProcessor) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: true}
+}
+
+func (p *genaiNormalizerProcessor) stripFlattenedSubkeys(attrs pcommon.Map) {
+	var toRemove []string
+	attrs.Range(func(k string, _ pcommon.Value) bool {
+		for _, pat := range p.flattenedSubkeyPats {
+			if pat.MatchString(k) {
+				toRemove = append(toRemove, k)
+				break
+			}
+		}
+		return true
+	})
+	for _, k := range toRemove {
+		attrs.Remove(k)
+	}
 }
 
 func (p *genaiNormalizerProcessor) Start(_ context.Context, _ component.Host) error { return nil }

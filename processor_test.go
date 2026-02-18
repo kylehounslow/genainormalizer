@@ -107,6 +107,80 @@ func TestKeepOriginals(t *testing.T) {
 	}
 }
 
+func TestStripFlattenedOpenInferenceSubkeys(t *testing.T) {
+	cfg := &Config{Profiles: []string{"openinference"}, RemoveOriginals: true}
+	sink := new(consumertest.TracesSink)
+	p, err := createTracesProcessor(context.Background(), processortest.NewNopSettings(component.MustNewType(typeStr)), cfg, sink)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	td := ptrace.NewTraces()
+	span := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	span.Attributes().PutStr("llm.input_messages", `[{"message.role":"user","message.content":"hello"}]`)
+	span.Attributes().PutStr("llm.input_messages.0.message.role", "user")
+	span.Attributes().PutStr("llm.input_messages.0.message.content", "hello")
+	span.Attributes().PutStr("llm.output_messages", `[{"message.role":"assistant","message.content":"hi"}]`)
+	span.Attributes().PutStr("llm.output_messages.0.message.role", "assistant")
+	span.Attributes().PutStr("llm.output_messages.0.message.content", "hi")
+	span.Attributes().PutStr("http.method", "GET")
+
+	if err := p.ConsumeTraces(context.Background(), td); err != nil {
+		t.Fatal(err)
+	}
+
+	out := sink.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
+
+	assertAttrStr(t, out, "gen_ai.input.messages", `[{"message.role":"user","message.content":"hello"}]`)
+	assertAttrStr(t, out, "gen_ai.output.messages", `[{"message.role":"assistant","message.content":"hi"}]`)
+
+	for _, key := range []string{
+		"llm.input_messages.0.message.role",
+		"llm.input_messages.0.message.content",
+		"llm.output_messages.0.message.role",
+		"llm.output_messages.0.message.content",
+	} {
+		if _, ok := out.Get(key); ok {
+			t.Errorf("expected flattened sub-key %s to be removed", key)
+		}
+	}
+
+	assertAttrStr(t, out, "http.method", "GET")
+}
+
+func TestStripFlattenedGenAiSubkeys(t *testing.T) {
+	cfg := &Config{Profiles: []string{"openllmetry"}, RemoveOriginals: true}
+	sink := new(consumertest.TracesSink)
+	p, err := createTracesProcessor(context.Background(), processortest.NewNopSettings(component.MustNewType(typeStr)), cfg, sink)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	td := ptrace.NewTraces()
+	span := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	span.Attributes().PutStr("gen_ai.prompt.0.role", "user")
+	span.Attributes().PutStr("gen_ai.prompt.0.content", "hello")
+	span.Attributes().PutStr("gen_ai.completion.0.role", "assistant")
+	span.Attributes().PutStr("gen_ai.completion.0.content", "hi")
+
+	if err := p.ConsumeTraces(context.Background(), td); err != nil {
+		t.Fatal(err)
+	}
+
+	out := sink.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
+
+	for _, key := range []string{
+		"gen_ai.prompt.0.role",
+		"gen_ai.prompt.0.content",
+		"gen_ai.completion.0.role",
+		"gen_ai.completion.0.content",
+	} {
+		if _, ok := out.Get(key); ok {
+			t.Errorf("expected flattened sub-key %s to be removed", key)
+		}
+	}
+}
+
 func assertAttrInt(t *testing.T, attrs pcommon.Map, key string, expected int64) {
 	t.Helper()
 	v, ok := attrs.Get(key)
