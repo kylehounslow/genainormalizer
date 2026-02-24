@@ -14,8 +14,6 @@ func TestOpenInferenceSpanKindMapping(t *testing.T) {
 		{"CHAIN", "invoke_agent"},
 		{"RETRIEVER", "retrieval"},
 		{"RERANKER", "retrieval"},
-		{"GUARDRAIL", "guardrail"},
-		{"EVALUATOR", "evaluate"},
 		{"PROMPT", "text_completion"},
 	}
 	for _, tt := range tests {

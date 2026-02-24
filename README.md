@@ -1,6 +1,6 @@
 # genainormalizer
 
-OpenTelemetry Collector processor that normalizes GenAI telemetry from [OpenInference](https://github.com/Arize-ai/openinference), [OpenLLMetry](https://github.com/traceloop/openllmetry), and framework-specific attributes to the official [OTel GenAI Semantic Conventions](https://opentelemetry.io/docs/specs/semconv/gen-ai/).
+OpenTelemetry Collector processor that normalizes GenAI telemetry from [OpenInference](https://github.com/Arize-ai/openinference) and [OpenLLMetry](https://github.com/traceloop/openllmetry) to the official [OTel GenAI Semantic Conventions](https://opentelemetry.io/docs/specs/semconv/gen-ai/).
 
 ## Why
 
@@ -8,15 +8,20 @@ The official OTel GenAI instrumentation covers [7 libraries](https://github.com/
 
 ```mermaid
 graph LR
-    subgraph Before
-        OI[OpenInference<br>llm.token_count.prompt<br>llm.model_name<br>openinference.span.kind]
-        OL[OpenLLMetry<br>llm.usage.prompt_tokens<br>llm.request.model<br>traceloop.span.kind]
-        LC[LangChain<br>lc.metadata.thread_id<br>langgraph.node.name]
-        CR[CrewAI<br>agent_role<br>crew_id]
-        PA[PydanticAI<br>agent_name]
+    subgraph Frameworks
+        S[Strands]
+        LC[LangChain / LangGraph]
+        CR[CrewAI]
+        OT[Other frameworks...]
     end
 
-    OI & OL & LC & CR & PA --> N[genainormalizer]
+    subgraph Instrumentation
+        OI[OpenInference<br>llm.token_count.prompt<br>llm.model_name<br>openinference.span.kind]
+        OL[OpenLLMetry<br>llm.usage.prompt_tokens<br>llm.request.model<br>traceloop.span.kind]
+    end
+
+    S & LC & CR & OT --> OI & OL
+    OI & OL --> N[genainormalizer]
 
     subgraph After
         G[OTel GenAI SemConv<br>gen_ai.usage.input_tokens<br>gen_ai.request.model<br>gen_ai.operation.name<br>gen_ai.agent.name<br>gen_ai.conversation.id]
@@ -34,17 +39,16 @@ Single-pass attribute canonicalization via configurable mapping profiles:
 | Schema collision resolution | `llm.usage.prompt_tokens` (OpenLLMetry) → `gen_ai.usage.input_tokens` |
 | | `llm.token_count.prompt` (OpenInference) → `gen_ai.usage.input_tokens` |
 | Span kind value mapping | `openinference.span.kind: "LLM"` → `gen_ai.operation.name: "chat"` |
-| Agentic abstraction unification | `agent_role` (CrewAI) → `gen_ai.agent.name` |
-| Metadata promotion | `lc.metadata.thread_id` → `gen_ai.conversation.id` |
+| Type conversion | `llm.response.finish_reason: "stop"` → `gen_ai.response.finish_reasons: ["stop"]` |
 
-42 attribute mappings across 6 profiles: `openinference`, `openllmetry`, `langchain`, `crewai`, `pydanticai`, `strands`. All targets verified against the [OTel GenAI SemConv registry](https://opentelemetry.io/docs/specs/semconv/registry/attributes/gen-ai/) (v1.39.0).
+34 attribute mappings across 2 profiles: `openinference`, `openllmetry`. All targets verified against the [OTel GenAI SemConv registry](https://opentelemetry.io/docs/specs/semconv/registry/attributes/gen-ai/) (v1.39.0).
 
 ## Configuration
 
 ```yaml
 processors:
   genainormalizer:
-    profiles: [openinference, openllmetry, langchain, crewai, pydanticai, strands]
+    profiles: [openinference, openllmetry]
     remove_originals: true  # set false to keep both original and normalized attributes
 
 service:
@@ -67,16 +71,14 @@ builder --config builder-config.yaml
 
 ## Testing
 
-10 real agent test scenarios included in `test-agents/`:
+Real agent test scenarios included in `test-agents/`, using OpenInference and OpenLLMetry instrumentation across multiple frameworks:
 
-| Framework | OpenInference | OpenLLMetry | Native OTel |
-|-----------|:---:|:---:|:---:|
-| Strands | ✅ | ✅ | |
-| LangChain | ✅ | ✅ | |
-| LangGraph | ✅ | ✅ | |
-| CrewAI | ✅ | ✅ | |
-| PydanticAI | ✅ | | |
-| Anthropic SDK | | | ✅ |
+| Framework | OpenInference | OpenLLMetry |
+|-----------|:---:|:---:|
+| Strands | ✅ | ✅ |
+| LangChain | ✅ | ✅ |
+| LangGraph | ✅ | ✅ |
+| CrewAI | ✅ | ✅ |
 
 ```bash
 # Run all scenarios (requires AWS credentials for Bedrock)

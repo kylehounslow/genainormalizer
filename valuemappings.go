@@ -2,38 +2,23 @@ package genainormalizer
 
 import "strings"
 
-// ValueMapping defines source→target value transforms for a specific attribute.
-// After key rename, if the target key has a value map, the value is also transformed.
-type ValueMapping map[string]string
-
-// ValueMappings returns value maps keyed by TARGET attribute name.
-// Only attributes that need value transformation (not just key rename) are listed.
-func ValueMappings() map[string]ValueMapping {
-	return map[string]ValueMapping{
-		"gen_ai.operation.name": operationNameValues,
-	}
-}
-
-// OpenInference span.kind → gen_ai.operation.name
-// OpenLLMetry traceloop.span.kind → gen_ai.operation.name
-// OpenLLMetry llm.request.type → gen_ai.operation.name
+// operationNameValues maps source operation/span-kind values to OTel GenAI operation names.
+// Keys preserve original casing from source specs for readability.
 //
 // Sources:
 //   OpenInference: https://github.com/Arize-ai/openinference/blob/main/spec/semantic_conventions.md#span-kinds
 //   OpenLLMetry:   traceloop.span.kind values from semconv_ai/__init__.py TraceloopSpanKindValues
 //   OpenLLMetry:   llm.request.type values from semconv_ai/__init__.py LLMRequestTypeValues
-//   OTel GenAI:    https://opentelemetry.io/docs/specs/semconv/gen-ai/gen-ai-agent-spans/
-var operationNameValues = ValueMapping{
+//   OTel GenAI:    https://opentelemetry.io/docs/specs/semconv/gen-ai/gen-ai-spans/
+var operationNameValues = map[string]string{
 	// OpenInference span kinds (uppercase)
 	"LLM":       "chat",
 	"EMBEDDING": "embeddings",
-	"CHAIN":     "invoke_agent", // Chain is the closest to agent invocation
+	"CHAIN":     "invoke_agent",
 	"RETRIEVER": "retrieval",
-	"RERANKER":  "retrieval",   // No dedicated rerank op; closest is retrieval
+	"RERANKER":  "retrieval",
 	"TOOL":      "execute_tool",
 	"AGENT":     "invoke_agent",
-	"GUARDRAIL": "guardrail",   // No OTel equivalent; pass through as custom value
-	"EVALUATOR": "evaluate",    // No OTel equivalent; pass through as custom value
 	"PROMPT":    "text_completion",
 
 	// OpenLLMetry traceloop.span.kind (lowercase)
@@ -49,23 +34,22 @@ var operationNameValues = ValueMapping{
 	"embedding":  "embeddings",
 }
 
+// operationNameValuesNormalized is built at init with lowercased keys for case-insensitive lookup.
+var operationNameValuesNormalized = func() map[string]string {
+	m := make(map[string]string, len(operationNameValues))
+	for k, v := range operationNameValues {
+		m[strings.ToLower(k)] = v
+	}
+	return m
+}()
+
 // TransformValue applies value mapping for a given target attribute key.
 // Returns the transformed value, or the original if no mapping exists.
-// Lookup is case-insensitive on the source value.
 func TransformValue(targetKey string, value string) string {
-	mappings := ValueMappings()
-	vm, ok := mappings[targetKey]
-	if !ok {
+	if targetKey != "gen_ai.operation.name" {
 		return value
 	}
-	// Try exact match first, then lowercase
-	if mapped, ok := vm[value]; ok {
-		return mapped
-	}
-	if mapped, ok := vm[strings.ToLower(value)]; ok {
-		return mapped
-	}
-	if mapped, ok := vm[strings.ToUpper(value)]; ok {
+	if mapped, ok := operationNameValuesNormalized[strings.ToLower(value)]; ok {
 		return mapped
 	}
 	return value
