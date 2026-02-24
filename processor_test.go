@@ -107,6 +107,35 @@ func TestKeepOriginals(t *testing.T) {
 	}
 }
 
+func TestWrapSliceFinishReason(t *testing.T) {
+	cfg := &Config{Profiles: []string{"openllmetry"}, RemoveOriginals: true}
+	sink := new(consumertest.TracesSink)
+	p, err := createTracesProcessor(context.Background(), processortest.NewNopSettings(component.MustNewType(typeStr)), cfg, sink)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	td := ptrace.NewTraces()
+	span := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	span.Attributes().PutStr("llm.response.finish_reason", "stop")
+
+	if err := p.ConsumeTraces(context.Background(), td); err != nil {
+		t.Fatal(err)
+	}
+
+	out := sink.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
+	v, ok := out.Get("gen_ai.response.finish_reasons")
+	if !ok {
+		t.Fatal("missing gen_ai.response.finish_reasons")
+	}
+	if v.Type() != pcommon.ValueTypeSlice {
+		t.Fatalf("expected slice type, got %v", v.Type())
+	}
+	if v.Slice().Len() != 1 || v.Slice().At(0).Str() != "stop" {
+		t.Errorf("expected [stop], got %v", v.Slice().AsRaw())
+	}
+}
+
 func assertAttrInt(t *testing.T, attrs pcommon.Map, key string, expected int64) {
 	t.Helper()
 	v, ok := attrs.Get(key)

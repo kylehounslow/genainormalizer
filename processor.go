@@ -14,7 +14,7 @@ const typeStr = "genainormalizer"
 
 type genaiNormalizerProcessor struct {
 	next        consumer.Traces
-	lookupTable map[string]string
+	lookupTable map[string]MappingTarget
 	removeOrig  bool
 }
 
@@ -62,27 +62,41 @@ func (p *genaiNormalizerProcessor) ConsumeTraces(ctx context.Context, td ptrace.
 }
 
 func (p *genaiNormalizerProcessor) normalizeAttributes(attrs pcommon.Map) {
-	var renames []struct{ from, to string }
+	type rename struct {
+		from   string
+		target MappingTarget
+	}
+	renames := make([]rename, 0, len(p.lookupTable))
 
 	attrs.Range(func(k string, v pcommon.Value) bool {
 		if target, ok := p.lookupTable[k]; ok {
-			renames = append(renames, struct{ from, to string }{k, target})
+			renames = append(renames, rename{k, target})
 		}
 		return true
 	})
 
+	if len(renames) == 0 {
+		return
+	}
+
 	for _, r := range renames {
 		if val, ok := attrs.Get(r.from); ok {
-			// Apply value transformation if needed (e.g. span kind → operation name)
-			if val.Type() == pcommon.ValueTypeStr {
-				transformed := TransformValue(r.to, val.Str())
-				if transformed != val.Str() {
-					attrs.PutStr(r.to, transformed)
+			// Skip if target attribute already exists (e.g. multiple source attrs map to same target)
+			if _, exists := attrs.Get(r.target.Key); exists {
+				continue
+			}
+			if r.target.WrapSlice && val.Type() == pcommon.ValueTypeStr {
+				arr := attrs.PutEmptySlice(r.target.Key)
+				arr.AppendEmpty().SetStr(val.Str())
+			} else if val.Type() == pcommon.ValueTypeStr {
+				strVal := val.Str()
+				if transformed := TransformValue(r.target.Key, strVal); transformed != strVal {
+					attrs.PutStr(r.target.Key, transformed)
 				} else {
-					val.CopyTo(attrs.PutEmpty(r.to))
+					val.CopyTo(attrs.PutEmpty(r.target.Key))
 				}
 			} else {
-				val.CopyTo(attrs.PutEmpty(r.to))
+				val.CopyTo(attrs.PutEmpty(r.target.Key))
 			}
 			if p.removeOrig {
 				attrs.Remove(r.from)
