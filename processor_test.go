@@ -136,6 +136,38 @@ func TestWrapSliceFinishReason(t *testing.T) {
 	}
 }
 
+func TestNormalizeSpanEvents(t *testing.T) {
+	cfg := &Config{Profiles: []string{"openinference"}, RemoveOriginals: true}
+	sink := new(consumertest.TracesSink)
+	p, err := createTracesProcessor(context.Background(), processortest.NewNopSettings(component.MustNewType(typeStr)), cfg, sink)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	td := ptrace.NewTraces()
+	span := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	span.Attributes().PutStr("llm.model_name", "claude-sonnet-4")
+
+	evt := span.Events().AppendEmpty()
+	evt.SetName("tool_call")
+	evt.Attributes().PutStr("tool.name", "search")
+	evt.Attributes().PutStr("tool_call.function.arguments", `{"q":"test"}`)
+
+	if err := p.ConsumeTraces(context.Background(), td); err != nil {
+		t.Fatal(err)
+	}
+
+	outSpan := sink.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+	assertAttrStr(t, outSpan.Attributes(), "gen_ai.request.model", "claude-sonnet-4")
+
+	outEvt := outSpan.Events().At(0).Attributes()
+	assertAttrStr(t, outEvt, "gen_ai.tool.name", "search")
+	assertAttrStr(t, outEvt, "gen_ai.tool.call.arguments", `{"q":"test"}`)
+	if _, ok := outEvt.Get("tool.name"); ok {
+		t.Error("expected tool.name to be removed from event")
+	}
+}
+
 func assertAttrInt(t *testing.T, attrs pcommon.Map, key string, expected int64) {
 	t.Helper()
 	v, ok := attrs.Get(key)

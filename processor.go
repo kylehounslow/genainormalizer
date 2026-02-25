@@ -59,7 +59,12 @@ func (p *genaiNormalizerProcessor) processTraces(_ context.Context, td ptrace.Tr
 		for j := 0; j < ilss.Len(); j++ {
 			spans := ilss.At(j).Spans()
 			for k := 0; k < spans.Len(); k++ {
-				p.normalizeAttributes(spans.At(k).Attributes())
+				span := spans.At(k)
+				p.normalizeAttributes(span.Attributes())
+				events := span.Events()
+				for e := 0; e < events.Len(); e++ {
+					p.normalizeAttributes(events.At(e).Attributes())
+				}
 			}
 		}
 	}
