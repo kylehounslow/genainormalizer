@@ -8,28 +8,17 @@ receivers:
 
 processors:
   genainormalizer:
+    semconv_version: "1.39.0"
     profiles:
       - openinference
       - openllmetry
-      - langchain
-      - crewai
-      - pydanticai
-      - strands
-    remove_originals: false
+    remove_originals: true
 
 exporters:
   debug:
     verbosity: detailed
 
 service:
-  telemetry:
-    metrics:
-      readers:
-        - pull:
-            exporter:
-              prometheus:
-                host: localhost
-                port: 9999
   pipelines:
     traces:
       receivers: [otlp]

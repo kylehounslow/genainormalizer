@@ -1,2 +1,6 @@
 .steering/
 dist/
+dist-linux/
+dist-ottl/
+coverage.out
+coverage.html
