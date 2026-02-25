@@ -40,6 +40,9 @@ func createTracesProcessor(
 	next consumer.Traces,
 ) (processor.Traces, error) {
 	c := cfg.(*Config)
+	if err := c.Validate(); err != nil {
+		return nil, err
+	}
 	return &genaiNormalizerProcessor{
 		next:        next,
 		lookupTable: BuildLookupTable(c.Profiles),
