@@ -228,6 +228,48 @@ func TestCustomMappingsOverrideProfile(t *testing.T) {
 	}
 }
 
+func TestOverwriteFalseSkipsExisting(t *testing.T) {
+	cfg := &Config{Profiles: []string{"openinference"}, RemoveOriginals: true, Overwrite: false}
+	sink := new(consumertest.TracesSink)
+	p, err := createTracesProcessor(context.Background(), processortest.NewNopSettings(component.MustNewType(typeStr)), cfg, sink)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	td := ptrace.NewTraces()
+	span := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	span.Attributes().PutStr("llm.model_name", "new-model")
+	span.Attributes().PutStr("gen_ai.request.model", "existing-model")
+
+	if err := p.ConsumeTraces(context.Background(), td); err != nil {
+		t.Fatal(err)
+	}
+
+	out := sink.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
+	assertAttrStr(t, out, "gen_ai.request.model", "existing-model")
+}
+
+func TestOverwriteTrueReplacesExisting(t *testing.T) {
+	cfg := &Config{Profiles: []string{"openinference"}, RemoveOriginals: true, Overwrite: true}
+	sink := new(consumertest.TracesSink)
+	p, err := createTracesProcessor(context.Background(), processortest.NewNopSettings(component.MustNewType(typeStr)), cfg, sink)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	td := ptrace.NewTraces()
+	span := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	span.Attributes().PutStr("llm.model_name", "new-model")
+	span.Attributes().PutStr("gen_ai.request.model", "existing-model")
+
+	if err := p.ConsumeTraces(context.Background(), td); err != nil {
+		t.Fatal(err)
+	}
+
+	out := sink.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
+	assertAttrStr(t, out, "gen_ai.request.model", "new-model")
+}
+
 func assertAttrInt(t *testing.T, attrs pcommon.Map, key string, expected int64) {
 	t.Helper()
 	v, ok := attrs.Get(key)

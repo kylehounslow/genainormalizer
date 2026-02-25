@@ -16,6 +16,7 @@ const typeStr = "genainormalizer"
 type genaiNormalizerProcessor struct {
 	lookupTable map[string]MappingTarget
 	removeOrig  bool
+	overwrite   bool
 }
 
 func NewFactory() processor.Factory {
@@ -46,6 +47,7 @@ func createTracesProcessor(
 	p := &genaiNormalizerProcessor{
 		lookupTable: BuildLookupTable(c.Profiles),
 		removeOrig:  c.RemoveOriginals,
+		overwrite:   c.Overwrite,
 	}
 	// Custom mappings override profile mappings on conflict.
 	for src, dst := range c.CustomMappings {
@@ -95,8 +97,8 @@ func (p *genaiNormalizerProcessor) normalizeAttributes(attrs pcommon.Map) {
 
 	for _, r := range renames {
 		if val, ok := attrs.Get(r.from); ok {
-			// Skip if target attribute already exists (e.g. multiple source attrs map to same target)
-			if _, exists := attrs.Get(r.target.Key); exists {
+			// Skip if target attribute already exists and overwrite is disabled
+			if _, exists := attrs.Get(r.target.Key); exists && !p.overwrite {
 				continue
 			}
 			if r.target.WrapSlice && val.Type() == pcommon.ValueTypeStr {

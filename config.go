@@ -29,6 +29,11 @@ type Config struct {
 	// RemoveOriginals deletes source attributes after mapping.
 	RemoveOriginals bool `mapstructure:"remove_originals"`
 
+	// Overwrite controls whether existing target attributes are overwritten.
+	// When false (default), if the target attribute already exists on the span,
+	// the mapping is skipped.
+	Overwrite bool `mapstructure:"overwrite"`
+
 	// CustomMappings allows users to define additional source→target attribute mappings.
 	// These are applied after profile mappings and override them on conflict.
 	CustomMappings map[string]string `mapstructure:"custom_mappings"`
