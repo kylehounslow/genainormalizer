@@ -61,6 +61,56 @@ func TestNormalizeOpenLLMetry(t *testing.T) {
 	assertAttrStr(t, out, "gen_ai.request.model", "gpt-4o")
 }
 
+func TestOpenLLMetryOnlyIgnoresOpenInference(t *testing.T) {
+	cfg := &Config{Profiles: []string{"openllmetry"}, RemoveOriginals: true}
+	sink := new(consumertest.TracesSink)
+	p, err := createTracesProcessor(context.Background(), processortest.NewNopSettings(component.MustNewType(typeStr)), cfg, sink)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	td := ptrace.NewTraces()
+	span := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	span.Attributes().PutInt("llm.token_count.prompt", 100)
+	span.Attributes().PutStr("llm.model_name", "claude-sonnet-4")
+
+	if err := p.ConsumeTraces(context.Background(), td); err != nil {
+		t.Fatal(err)
+	}
+
+	out := sink.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
+	assertAttrInt(t, out, "llm.token_count.prompt", 100)
+	assertAttrStr(t, out, "llm.model_name", "claude-sonnet-4")
+	if _, ok := out.Get("gen_ai.usage.input_tokens"); ok {
+		t.Error("OpenInference attr should not be mapped when only openllmetry profile is enabled")
+	}
+}
+
+func TestOpenInferenceOnlyIgnoresOpenLLMetry(t *testing.T) {
+	cfg := &Config{Profiles: []string{"openinference"}, RemoveOriginals: true}
+	sink := new(consumertest.TracesSink)
+	p, err := createTracesProcessor(context.Background(), processortest.NewNopSettings(component.MustNewType(typeStr)), cfg, sink)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	td := ptrace.NewTraces()
+	span := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	span.Attributes().PutInt("llm.usage.prompt_tokens", 200)
+	span.Attributes().PutStr("llm.request.model", "gpt-4o")
+
+	if err := p.ConsumeTraces(context.Background(), td); err != nil {
+		t.Fatal(err)
+	}
+
+	out := sink.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
+	assertAttrInt(t, out, "llm.usage.prompt_tokens", 200)
+	assertAttrStr(t, out, "llm.request.model", "gpt-4o")
+	if _, ok := out.Get("gen_ai.usage.input_tokens"); ok {
+		t.Error("OpenLLMetry attr should not be mapped when only openinference profile is enabled")
+	}
+}
+
 func TestNoOpOnNonGenAISpan(t *testing.T) {
 	cfg := &Config{Profiles: []string{"openinference", "openllmetry"}, RemoveOriginals: true}
 	sink := new(consumertest.TracesSink)
@@ -170,7 +220,7 @@ func TestNormalizeSpanEvents(t *testing.T) {
 
 func TestCustomMappings(t *testing.T) {
 	cfg := &Config{
-		Profiles:       []string{"openinference"},
+		Profiles:        []string{"openinference"},
 		RemoveOriginals: true,
 		CustomMappings: map[string]string{
 			"my_vendor.model": "gen_ai.request.model",
@@ -199,7 +249,7 @@ func TestCustomMappings(t *testing.T) {
 
 func TestCustomMappingsOverrideProfile(t *testing.T) {
 	cfg := &Config{
-		Profiles:       []string{"openinference"},
+		Profiles:        []string{"openinference"},
 		RemoveOriginals: true,
 		CustomMappings: map[string]string{
 			// Override the profile mapping for llm.model_name
