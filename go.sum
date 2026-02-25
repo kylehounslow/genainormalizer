@@ -65,6 +65,8 @@ go.opentelemetry.io/collector/pipeline v1.51.0 h1:GZBNW+aaOE+zufGzAkXy0OI7n1cqep
 go.opentelemetry.io/collector/pipeline v1.51.0/go.mod h1:xUrAqiebzYbrgxyoXSkk6/Y3oi5Sy3im2iCA51LwUAI=
 go.opentelemetry.io/collector/processor v1.51.0 h1:PKpCzkLQmqaW08TOVh/zM0qx07Ihq+DR5J/OBkPiL9o=
 go.opentelemetry.io/collector/processor v1.51.0/go.mod h1:rtIPFS+EFRAkG+CSwtjxs2IsIkuZStObvALeueD02XI=
+go.opentelemetry.io/collector/processor/processorhelper v0.145.0 h1:vXdv6lHz20Tm3ZEsg0i6jPZJBQgy9kzk/PuqWhHWiiM=
+go.opentelemetry.io/collector/processor/processorhelper v0.145.0/go.mod h1:3Ecpe5jHRHGf24EvJHeJ/ekK/a1DLByyq0CSUxjjURg=
 go.opentelemetry.io/collector/processor/processortest v0.145.0 h1:RDGBmyZnHk7XVK/EdLt/8iPWj+QLStbbVi1nFTNR01s=
 go.opentelemetry.io/collector/processor/processortest v0.145.0/go.mod h1:WAvxAzSojkdoZB915Z1lsVHCPDJBb2fepjJBjenrzjg=
 go.opentelemetry.io/collector/processor/xprocessor v0.145.0 h1:DaIE7MxRlg0OL1o2P0GQZtmZeExAmVso3qWv8S0RLps=

@@ -8,12 +8,12 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
 const typeStr = "genainormalizer"
 
 type genaiNormalizerProcessor struct {
-	next        consumer.Traces
 	lookupTable map[string]MappingTarget
 	removeOrig  bool
 }
@@ -34,8 +34,8 @@ func createDefaultConfig() component.Config {
 }
 
 func createTracesProcessor(
-	_ context.Context,
-	_ processor.Settings,
+	ctx context.Context,
+	set processor.Settings,
 	cfg component.Config,
 	next consumer.Traces,
 ) (processor.Traces, error) {
@@ -43,14 +43,16 @@ func createTracesProcessor(
 	if err := c.Validate(); err != nil {
 		return nil, err
 	}
-	return &genaiNormalizerProcessor{
-		next:        next,
+	p := &genaiNormalizerProcessor{
 		lookupTable: BuildLookupTable(c.Profiles),
 		removeOrig:  c.RemoveOriginals,
-	}, nil
+	}
+	return processorhelper.NewTraces(ctx, set, cfg, next, p.processTraces,
+		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
+	)
 }
 
-func (p *genaiNormalizerProcessor) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
+func (p *genaiNormalizerProcessor) processTraces(_ context.Context, td ptrace.Traces) (ptrace.Traces, error) {
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
 		ilss := rss.At(i).ScopeSpans()
@@ -61,7 +63,7 @@ func (p *genaiNormalizerProcessor) ConsumeTraces(ctx context.Context, td ptrace.
 			}
 		}
 	}
-	return p.next.ConsumeTraces(ctx, td)
+	return td, nil
 }
 
 func (p *genaiNormalizerProcessor) normalizeAttributes(attrs pcommon.Map) {
@@ -107,10 +109,3 @@ func (p *genaiNormalizerProcessor) normalizeAttributes(attrs pcommon.Map) {
 		}
 	}
 }
-
-func (p *genaiNormalizerProcessor) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: true}
-}
-
-func (p *genaiNormalizerProcessor) Start(_ context.Context, _ component.Host) error { return nil }
-func (p *genaiNormalizerProcessor) Shutdown(_ context.Context) error                 { return nil }

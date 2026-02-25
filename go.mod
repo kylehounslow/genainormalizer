@@ -32,6 +32,7 @@ require (
 	go.opentelemetry.io/collector/pdata/pprofile v0.145.0 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.145.0 // indirect
 	go.opentelemetry.io/collector/pipeline v1.51.0 // indirect
+	go.opentelemetry.io/collector/processor/processorhelper v0.145.0 // indirect
 	go.opentelemetry.io/collector/processor/xprocessor v0.145.0 // indirect
 	go.opentelemetry.io/otel v1.39.0 // indirect
 	go.opentelemetry.io/otel/metric v1.39.0 // indirect

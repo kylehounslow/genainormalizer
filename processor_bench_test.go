@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
@@ -13,7 +12,7 @@ import (
 // OpenInference LLM span with 8 attributes that need mapping.
 func BenchmarkNormalizeOpenInference(b *testing.B) {
 	p := &genaiNormalizerProcessor{
-		lookupTable: BuildLookupTable([]string{"openinference", "openllmetry", "langchain", "crewai", "pydanticai"}),
+		lookupTable: BuildLookupTable([]string{"openinference", "openllmetry"}),
 		removeOrig:  true,
 	}
 
@@ -25,7 +24,6 @@ func BenchmarkNormalizeOpenInference(b *testing.B) {
 		attrs.PutInt("llm.token_count.completion", 50)
 		attrs.PutStr("llm.model_name", "claude-sonnet-4-20250514")
 		attrs.PutStr("llm.provider", "anthropic")
-		attrs.PutStr("llm.system", "anthropic")
 		attrs.PutStr("session.id", "sess-123")
 		attrs.PutStr("agent.name", "research-agent")
 		// Non-GenAI attributes that should be skipped
@@ -39,7 +37,7 @@ func BenchmarkNormalizeOpenInference(b *testing.B) {
 // has no GenAI attributes (early exit path).
 func BenchmarkNormalizeNoMatch(b *testing.B) {
 	p := &genaiNormalizerProcessor{
-		lookupTable: BuildLookupTable([]string{"openinference", "openllmetry", "langchain", "crewai", "pydanticai"}),
+		lookupTable: BuildLookupTable([]string{"openinference", "openllmetry"}),
 		removeOrig:  true,
 	}
 
@@ -58,16 +56,15 @@ func BenchmarkNormalizeNoMatch(b *testing.B) {
 // simulating a realistic collector workload.
 func BenchmarkNormalizeBatch100(b *testing.B) {
 	p := &genaiNormalizerProcessor{
-		lookupTable: BuildLookupTable([]string{"openinference", "openllmetry", "langchain", "crewai", "pydanticai"}),
+		lookupTable: BuildLookupTable([]string{"openinference", "openllmetry"}),
 		removeOrig:  true,
-		next:        &noopConsumer{},
 	}
 
 	td := buildBatchTraces(100)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_ = p.ConsumeTraces(context.Background(), td)
+		_, _ = p.processTraces(context.Background(), td)
 	}
 }
 
@@ -88,11 +85,4 @@ func buildBatchTraces(n int) ptrace.Traces {
 		attrs.PutStr("service.name", "my-service")
 	}
 	return td
-}
-
-type noopConsumer struct{}
-
-func (n *noopConsumer) ConsumeTraces(_ context.Context, _ ptrace.Traces) error { return nil }
-func (n *noopConsumer) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
 }
