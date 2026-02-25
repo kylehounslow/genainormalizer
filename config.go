@@ -28,6 +28,10 @@ type Config struct {
 
 	// RemoveOriginals deletes source attributes after mapping.
 	RemoveOriginals bool `mapstructure:"remove_originals"`
+
+	// CustomMappings allows users to define additional source→target attribute mappings.
+	// These are applied after profile mappings and override them on conflict.
+	CustomMappings map[string]string `mapstructure:"custom_mappings"`
 }
 
 // Validate checks that the configuration is valid.

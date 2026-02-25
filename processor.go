@@ -47,6 +47,10 @@ func createTracesProcessor(
 		lookupTable: BuildLookupTable(c.Profiles),
 		removeOrig:  c.RemoveOriginals,
 	}
+	// Custom mappings override profile mappings on conflict.
+	for src, dst := range c.CustomMappings {
+		p.lookupTable[src] = MappingTarget{Key: dst}
+	}
 	return processorhelper.NewTraces(ctx, set, cfg, next, p.processTraces,
 		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
 	)

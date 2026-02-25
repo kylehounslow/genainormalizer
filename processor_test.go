@@ -168,6 +168,66 @@ func TestNormalizeSpanEvents(t *testing.T) {
 	}
 }
 
+func TestCustomMappings(t *testing.T) {
+	cfg := &Config{
+		Profiles:       []string{"openinference"},
+		RemoveOriginals: true,
+		CustomMappings: map[string]string{
+			"my_vendor.model": "gen_ai.request.model",
+		},
+	}
+	sink := new(consumertest.TracesSink)
+	p, err := createTracesProcessor(context.Background(), processortest.NewNopSettings(component.MustNewType(typeStr)), cfg, sink)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	td := ptrace.NewTraces()
+	span := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	span.Attributes().PutStr("my_vendor.model", "custom-model-v1")
+
+	if err := p.ConsumeTraces(context.Background(), td); err != nil {
+		t.Fatal(err)
+	}
+
+	out := sink.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
+	assertAttrStr(t, out, "gen_ai.request.model", "custom-model-v1")
+	if _, ok := out.Get("my_vendor.model"); ok {
+		t.Error("expected my_vendor.model to be removed")
+	}
+}
+
+func TestCustomMappingsOverrideProfile(t *testing.T) {
+	cfg := &Config{
+		Profiles:       []string{"openinference"},
+		RemoveOriginals: true,
+		CustomMappings: map[string]string{
+			// Override the profile mapping for llm.model_name
+			"llm.model_name": "gen_ai.response.model",
+		},
+	}
+	sink := new(consumertest.TracesSink)
+	p, err := createTracesProcessor(context.Background(), processortest.NewNopSettings(component.MustNewType(typeStr)), cfg, sink)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	td := ptrace.NewTraces()
+	span := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	span.Attributes().PutStr("llm.model_name", "gpt-4o")
+
+	if err := p.ConsumeTraces(context.Background(), td); err != nil {
+		t.Fatal(err)
+	}
+
+	out := sink.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
+	// Custom mapping should win over profile mapping
+	assertAttrStr(t, out, "gen_ai.response.model", "gpt-4o")
+	if _, ok := out.Get("gen_ai.request.model"); ok {
+		t.Error("profile mapping should have been overridden by custom mapping")
+	}
+}
+
 func assertAttrInt(t *testing.T, attrs pcommon.Map, key string, expected int64) {
 	t.Helper()
 	v, ok := attrs.Get(key)
