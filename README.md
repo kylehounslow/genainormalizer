@@ -27,29 +27,30 @@ Single-pass attribute canonicalization applied to both span and span event attri
 | Span kind value mapping | `openinference.span.kind: "LLM"` → `gen_ai.operation.name: "chat"` |
 | Type conversion | `llm.response.finish_reason: "stop"` → `gen_ai.response.finish_reasons: ["stop"]` |
 
-34 attribute mappings across 2 profiles: `openinference`, `openllmetry`. All targets verified against the [OTel GenAI SemConv registry](https://opentelemetry.io/docs/specs/semconv/registry/attributes/gen-ai/).
+90+ attribute mappings across 7 profiles: `openinference`, `openllmetry`, `langchain`, `crewai`, `pydanticai`, `strands`, `llamaindex`. All targets verified against the [OTel GenAI SemConv registry](https://opentelemetry.io/docs/specs/semconv/registry/attributes/gen-ai/) (v1.39.0).
+
+### Dynamic Nested Attribute Handling
+
+The processor automatically handles nested attributes with arbitrary depth (e.g., `llm.tools.0.tool.json_schema`, `llm.tools.1.tool.json_schema`) and collects them into proper JSON arrays (`gen_ai.tool.definitions`). This works for any framework with nested structures, not just predefined patterns.
+
+### LlamaIndex Profile Features
+
+The `llamaindex` profile includes special LlamaIndex-specific features:
+
+1. **gen_ai.system propagation**: Automatically propagates `gen_ai.system` from LLM call spans to all other spans in the trace (workflow, agent, tool execution spans)
+2. **Agent name extraction**: Extracts `current_agent_name` from JSON strings in `output.value` and `input.value` attributes and maps it to `gen_ai.agent.name`
+
+These features ensure complete attribute coverage for easier querying and analytics in agentic workflows.
+
+See [LLAMAINDEX_FEATURES.md](LLAMAINDEX_FEATURES.md) for detailed documentation and examples.
 
 ## Configuration
 
 ```yaml
 processors:
   genainormalizer:
-    # Target OTel GenAI Semantic Convention version. Default: "1.39.0"
-    semconv_version: "1.39.0"
-
-    # Mapping profiles to enable. Default: [openinference, openllmetry]
-    profiles: [openinference, openllmetry]
-
-    # Delete source attributes after mapping. Default: true
-    remove_originals: true
-
-    # Overwrite existing target attributes. Default: false
-    # When false, if gen_ai.request.model already exists on a span, it won't be overwritten.
-    overwrite: false
-
-    # User-defined source→target mappings. Applied after profiles, overrides on conflict.
-    custom_mappings:
-      my_vendor.model: gen_ai.request.model
+    profiles: [openinference, openllmetry, llamaindex, langchain, crewai, pydanticai, strands]
+    remove_originals: true  # set false to keep both original and normalized attributes
 
 service:
   pipelines:

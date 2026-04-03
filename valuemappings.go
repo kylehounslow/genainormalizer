@@ -32,6 +32,11 @@ var operationNameValues = map[string]string{
 	"chat":       "chat",
 	"rerank":     "retrieval",
 	"embedding":  "embeddings",
+
+	// AutoGen messaging.operation values
+	"create":  "create_agent",
+	"publish": "send_message",
+	"receive": "receive_message",
 }
 
 // operationNameValuesNormalized is built at init with lowercased keys for case-insensitive lookup.

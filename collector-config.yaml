@@ -12,7 +12,13 @@ processors:
     profiles:
       - openinference
       - openllmetry
-    remove_originals: true
+      - langchain
+      - langsmith
+      - crewai
+      - pydanticai
+      - strands
+      - autogen
+    remove_originals: false
 
 exporters:
   debug:
